@@ -5,8 +5,8 @@ from infogan.misc.distributions import Uniform, Categorical, Gaussian, MeanBerno
 import tensorflow as tf
 import os
 from infogan.misc.datasets import MnistDataset, PolicyDataset
-from infogan.models.regularized_gan import RegularizedGAN
-from infogan.algos.infogan_trainer import InfoGANTrainer
+from infogan.models.regularized_gan_cond import RegularizedGAN
+from infogan.algos.infogan_trainer_cond import InfoGANTrainer
 from infogan.misc.utils import mkdir_p
 import dateutil
 import dateutil.tz
@@ -31,14 +31,8 @@ if __name__ == "__main__":
     mkdir_p(log_dir)
     mkdir_p(checkpoint_dir)
 
-    dataset = MnistDataset()
 
-    #dataset = PolicyDataset()
-
-    #states, actions = dataset.next_batch(11)
-    #print(states)
-    #print(actions)
-    #exit()
+    dataset = PolicyDataset()
 
 
     latent_spec = [
@@ -49,10 +43,10 @@ if __name__ == "__main__":
     ]
 
     model = RegularizedGAN(
-        output_dist=MeanBernoulli(dataset.image_dim),
+        output_dist=MeanBernoulli(dataset.action_dim),
         latent_spec=latent_spec,
         batch_size=batch_size,
-        image_shape=dataset.image_shape,
+        image_shape=dataset.action_shape,
         network_type="mnist",
     )
 

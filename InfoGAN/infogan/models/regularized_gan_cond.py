@@ -3,7 +3,7 @@ import prettytensor as pt
 import tensorflow as tf
 import infogan.misc.custom_ops
 from infogan.misc.custom_ops import leaky_rectify
-
+import pdb
 
 class RegularizedGAN(object):
     def __init__(self, output_dist, latent_spec, batch_size, image_shape, network_type):
@@ -72,17 +72,28 @@ class RegularizedGAN(object):
         else:
             raise NotImplementedError
 
-    def discriminate(self, x_var,state):
-        state_out = self.state_template(state = state)
-        d_out = self.discriminator_template.construct(input=x_var + state_out)
+    def discriminate(self, x_var, state):
+        state_out = self.state_template.construct(state = state)
+
+        whole_input = state_out.join([x_var], include_self=True)
+        whole_input = tf.variable(whole_input)
+        d_out = self.discriminator_template.construct(input=whole_input)
         
         d = tf.nn.sigmoid(d_out[:, 0])
-        reg_dist_flat = self.encoder_template.construct(input=x_var + state_out)
+        
+        reg_dist_flat = self.encoder_template.construct(input=whole_input)
+
+
         reg_dist_info = self.reg_latent_dist.activate_dist(reg_dist_flat)
+
+        pdb.set_trace()
         return d, self.reg_latent_dist.sample(reg_dist_info), reg_dist_info, reg_dist_flat
 
-    def generate(self, z_var):
-        x_dist_flat = self.generator_template.construct(input=z_var)
+    def generate(self, z_var, state):
+        state_out = self.state_template.construct(state = state)
+
+        whole_input = state_out.join([z_var], include_self=True)
+        x_dist_flat = self.generator_template.construct(input=whole_input)
         x_dist_info = self.output_dist.activate_dist(x_dist_flat)
         return self.output_dist.sample(x_dist_info), x_dist_info
 

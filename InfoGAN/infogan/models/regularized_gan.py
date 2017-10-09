@@ -3,7 +3,7 @@ import prettytensor as pt
 import tensorflow as tf
 import infogan.misc.custom_ops
 from infogan.misc.custom_ops import leaky_rectify
-
+import pdb
 
 class RegularizedGAN(object):
     def __init__(self, output_dist, latent_spec, batch_size, image_shape, network_type):
@@ -70,7 +70,12 @@ class RegularizedGAN(object):
         d_out = self.discriminator_template.construct(input=x_var)
         d = tf.nn.sigmoid(d_out[:, 0])
         reg_dist_flat = self.encoder_template.construct(input=x_var)
+
+
         reg_dist_info = self.reg_latent_dist.activate_dist(reg_dist_flat)
+        pdb.set_trace()
+
+        
         return d, self.reg_latent_dist.sample(reg_dist_info), reg_dist_info, reg_dist_flat
 
     def generate(self, z_var):

@@ -1,4 +1,4 @@
-from infogan.models.regularized_gan import RegularizedGAN
+from infogan.models.regularized_gan_cond import RegularizedGAN
 import prettytensor as pt
 import tensorflow as tf
 import numpy as np
@@ -45,20 +45,19 @@ class InfoGANTrainer(object):
         self.log_vars = []
 
     def init_opt(self):
+        #self.input_tensor = input_tensor = tf.placeholder(tf.float32, [self.batch_size, self.dataset.image_dim])
+        self.input_tensor  = input_tensor = tf.placeholder(tf.float32, [self.batch_size, self.dataset.action_dim])
         
-        self.input_tensor = input_tensor = tf.placeholder(tf.float32, [self.batch_size, self.dataset.image_dim])
-
-
         with pt.defaults_scope(phase=pt.Phase.train):
             #Z_VAR IS NOISE AND LATENT CODE TOGETHER
             z_var = self.model.latent_dist.sample_prior(self.batch_size)
+            
+            state_input = tf.placeholder(tf.float32, [self.batch_size, self.dataset.state_dim])
 
 
-            fake_x, _ = self.model.generate(z_var)
-            # pdb.set_trace()
-            real_d, _, _, _ = self.model.discriminate(input_tensor)
-            fake_d, _, fake_reg_z_dist_info, _ = self.model.discriminate(fake_x)
-
+            fake_x, _ = self.model.generate(z_var,state_input)
+            real_d, _, _, _ = self.model.discriminate(input_tensor, state_input)
+            fake_d, _, fake_reg_z_dist_info, _ = self.model.discriminate(fake_x, state_input)
 
             reg_z = self.model.reg_z(z_var)
 
@@ -77,7 +76,6 @@ class InfoGANTrainer(object):
                 disc_reg_z = self.model.disc_reg_z(reg_z)
                 disc_reg_dist_info = self.model.disc_reg_dist_info(fake_reg_z_dist_info)
                 disc_log_q_c_given_x = self.model.reg_disc_latent_dist.logli(disc_reg_z, disc_reg_dist_info)
-                pdb.set_trace()
                 disc_log_q_c = self.model.reg_disc_latent_dist.logli_prior(disc_reg_z)
                 disc_cross_ent = tf.reduce_mean(-disc_log_q_c_given_x)
                 disc_ent = tf.reduce_mean(-disc_log_q_c)
@@ -88,7 +86,6 @@ class InfoGANTrainer(object):
                 self.log_vars.append(("CrossEnt_disc", disc_cross_ent))
                 discriminator_loss -= self.info_reg_coeff * disc_mi_est
                 generator_loss -= self.info_reg_coeff * disc_mi_est
-                pdb.set_trace()
 
             if len(self.model.reg_cont_latent_dist.dists) > 0:
                 cont_reg_z = self.model.cont_reg_z(reg_z)
@@ -242,8 +239,8 @@ class InfoGANTrainer(object):
                 for i in range(self.updates_per_epoch):
                     pbar.update(i)
                     x, _ = self.dataset.train.next_batch(self.batch_size)
-                    #import pdb
-                    #pdb.set_trace()
+                    import pdb
+                    pdb.set_trace()
 
                     feed_dict = {self.input_tensor: x}
                     log_vals = sess.run([self.discriminator_trainer] + log_vars, feed_dict)[1:]
