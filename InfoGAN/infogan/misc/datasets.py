@@ -92,13 +92,24 @@ class MnistDataset(object):
 class PolicyDataset(object):
     def __init__(self):
         # read in data
-        forward_file_states = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/f_expert_policies_states.npy'
-        forward_file_actions = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/f_expert_policies_actions.npy'
+        forward_file_states = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/forward_walker/expert_policies_states.npy'
+        forward_file_actions = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/forward_walker/expert_policies_actions.npy'
         
+        backward_file_states = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/backward_walker/expert_policies_states.npy'
+        backward_file_actions = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/backward_walker/expert_policies_actions.npy'
+
+        backward_states = np.load(backward_file_states)
+        backward_actions = np.load(backward_file_actions)
+
         forward_states = np.load(forward_file_states)
         forward_actions = np.load(forward_file_actions)
 
-        self.data = {'states': forward_states, 'actions': forward_actions}
+        states = np.concatenate((backward_states,forward_states ),axis = 0)
+        actions = np.concatenate((backward_actions,forward_actions ),axis = 0)
+
+
+        pdb.set_trace() 
+        self.data = {'states': states, 'actions': actions}
         self.state_dim = 18*1
         self.state_shape = (18,1,1)
 
