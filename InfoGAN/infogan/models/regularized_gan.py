@@ -73,7 +73,7 @@ class RegularizedGAN(object):
 
 
         reg_dist_info = self.reg_latent_dist.activate_dist(reg_dist_flat)
-        pdb.set_trace()
+        #pdb.set_trace()
 
         
         return d, self.reg_latent_dist.sample(reg_dist_info), reg_dist_info, reg_dist_flat

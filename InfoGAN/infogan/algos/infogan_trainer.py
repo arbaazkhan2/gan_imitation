@@ -88,7 +88,7 @@ class InfoGANTrainer(object):
                 self.log_vars.append(("CrossEnt_disc", disc_cross_ent))
                 discriminator_loss -= self.info_reg_coeff * disc_mi_est
                 generator_loss -= self.info_reg_coeff * disc_mi_est
-                pdb.set_trace()
+                #pdb.set_trace()
 
             if len(self.model.reg_cont_latent_dist.dists) > 0:
                 cont_reg_z = self.model.cont_reg_z(reg_z)

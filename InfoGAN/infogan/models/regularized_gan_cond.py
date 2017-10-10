@@ -31,16 +31,18 @@ class RegularizedGAN(object):
             with tf.variable_scope("d_net"):
                 self.state_template = \
                      ((pt.template("state").
-                     custom_fully_connected(1024).
+                     custom_fully_connected(128).
                      fc_batch_norm().
                      apply(tf.nn.relu)))
 
                 shared_template = \
                     (pt.template("input").
-                     reshape([-1] + list(image_shape)).
-                     custom_conv2d(64, k_h=4, k_w=4).
+                     #reshape([-1] + list(image_shape)).
+                     #custom_conv2d(64, k_h=4, k_w=4).
+                     custom_fully_connected(256).
                      apply(leaky_rectify).
-                     custom_conv2d(128, k_h=4, k_w=4).
+                     #custom_conv2d(128, k_h=4, k_w=4).
+                     custom_fully_connected(512).
                      conv_batch_norm().
                      apply(leaky_rectify).
                      custom_fully_connected(1024).
@@ -60,14 +62,14 @@ class RegularizedGAN(object):
                      custom_fully_connected(1024).
                      fc_batch_norm().
                      apply(tf.nn.relu).
-                     custom_fully_connected(image_size / 4 * image_size / 4 * 128).
+                     custom_fully_connected(6).
                      fc_batch_norm().
                      apply(tf.nn.relu).
-                     reshape([-1, int(image_size / 4), int(image_size / 4), 128]).
-                     custom_deconv2d([0, int(image_size / 2), int(image_size / 2), 64], k_h=4, k_w=4).
-                     conv_batch_norm().
-                     apply(tf.nn.relu).
-                     custom_deconv2d([0] + list(image_shape), k_h=4, k_w=4).
+                     #reshape([-1, int(image_size / 4), int(image_size / 4), 128]).
+                     #custom_deconv2d([0, int(image_size / 2), int(image_size / 2), 64], k_h=4, k_w=4).
+                     #fc_batch_norm().
+                     #apply(tf.nn.relu).
+                     #custom_deconv2d([0] + list(image_shape), k_h=4, k_w=4).
                      flatten())
         else:
             raise NotImplementedError
@@ -75,24 +77,32 @@ class RegularizedGAN(object):
     def discriminate(self, x_var, state):
         state_out = self.state_template.construct(state = state)
 
-        whole_input = state_out.join([x_var], include_self=True)
-        whole_input = tf.variable(whole_input)
+        state_out = tf.convert_to_tensor(state_out, dtype=tf.float32)
+        x_var = tf.convert_to_tensor(x_var, dtype= tf.float32)
+        #whole_input = state_out.join([x_var], include_self=True)
+        #whole_input = tf.convert_to_tensor(whole_input, dtype = tf.float32)
+        whole_input = tf.concat([state_out, x_var],-1)
+
         d_out = self.discriminator_template.construct(input=whole_input)
         
         d = tf.nn.sigmoid(d_out[:, 0])
         
+        #whole_input = tf.convert_to_tensor(whole_input, dtype = tf.float32)
         reg_dist_flat = self.encoder_template.construct(input=whole_input)
 
 
         reg_dist_info = self.reg_latent_dist.activate_dist(reg_dist_flat)
 
-        pdb.set_trace()
+        #pdb.set_trace()
         return d, self.reg_latent_dist.sample(reg_dist_info), reg_dist_info, reg_dist_flat
 
     def generate(self, z_var, state):
         state_out = self.state_template.construct(state = state)
+        z_var = tf.convert_to_tensor(z_var, dtype= tf.float32)
 
-        whole_input = state_out.join([z_var], include_self=True)
+        
+        whole_input = tf.concat([state_out, z_var],-1)
+        #whole_input = state_out.join([z_var], include_self=True)
         x_dist_flat = self.generator_template.construct(input=whole_input)
         x_dist_info = self.output_dist.activate_dist(x_dist_flat)
         return self.output_dist.sample(x_dist_info), x_dist_info

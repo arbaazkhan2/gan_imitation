@@ -99,11 +99,11 @@ class PolicyDataset(object):
         forward_actions = np.load(forward_file_actions)
 
         self.data = {'states': forward_states, 'actions': forward_actions}
-        self.state_dim = 17*1
-        self.state_shape = (17,1,1)
+        self.state_dim = 18*1
+        self.state_shape = (18,1,1)
 
-        self.action_dim = 16*1
-        self.action_shape = (16,1,1)
+        self.action_dim = 6*1
+        self.action_shape = (6,1,1)
 
     def next_batch(self, batch_size):
         n = self.data['states'].shape[0]
@@ -118,4 +118,3 @@ class PolicyDataset(object):
 
 
 
-2624400
