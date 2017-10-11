@@ -40,8 +40,7 @@ class RegularizedGAN(object):
                      #reshape([-1] + list(image_shape)).
                      #custom_conv2d(64, k_h=4, k_w=4).
                      custom_fully_connected(256).
-                     apply(tf.nn.relu).
-                     dropout(0.55))
+                     apply(tf.nn.relu)).
                      #custom_conv2d(128, k_h=4, k_w=4).
                      #custom_fully_connected(512).
                      #fc_batch_norm().
