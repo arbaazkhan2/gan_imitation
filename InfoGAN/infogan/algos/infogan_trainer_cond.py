@@ -51,7 +51,7 @@ class InfoGANTrainer(object):
         now = datetime.utcnow().strftime("%b-%d_%H:%M:%S")  # create unique directories
         aigym_path = os.path.join('./Videos', now)
         self.env = gym.make('Walker2d-v1')
-        self.env = wrappers.Monitor(self.env, aigym_path, force=True)
+        #self.env = wrappers.Monitor(self.env, aigym_path, force=True)
 
     def em_loss(self,y_coefficients, y_pred):
         return tf.reduce_mean(tf.multiply(y_coefficients, y_pred))
