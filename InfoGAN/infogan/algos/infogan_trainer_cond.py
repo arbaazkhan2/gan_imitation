@@ -252,7 +252,7 @@ class InfoGANTrainer(object):
         action, _ = self.model.generate(z_var, single_state_input)
 
         while True:
-            self.env.render()
+            #self.env.render()
 
             fd = {single_state_input: np.array([obs])}
             action_val = sess.run(action, feed_dict=fd)
