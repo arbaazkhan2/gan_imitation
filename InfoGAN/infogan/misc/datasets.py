@@ -3,7 +3,7 @@ from tensorflow.examples.tutorials import mnist
 import os
 import numpy as np
 import pickle
-
+import pdb
 
 class Dataset(object):
     def __init__(self, images, labels=None):
@@ -98,20 +98,22 @@ class PolicyDataset(object):
         backward_file_states = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/backward_walker/expert_policies_states.npy'
         backward_file_actions = '/home/leegroup/Documents/gan_imitation/InfoGAN/data/backward_walker/expert_policies_actions.npy'
 
-        backward_states = np.load(backward_file_states)
+        backward_states = np.load(backward_file_states)[:, :-1]
         backward_actions = np.load(backward_file_actions)
 
-        forward_states = np.load(forward_file_states)
+        forward_states = np.load(forward_file_states)[:, :-1]
         forward_actions = np.load(forward_file_actions)
 
-        states = np.concatenate((backward_states,forward_states ),axis = 0)
-        actions = np.concatenate((backward_actions,forward_actions ),axis = 0)
+        # states = np.concatenate((backward_states, forward_states),axis = 0)
+        # actions = np.concatenate((backward_actions, forward_actions),axis = 0)
+
+        states = np.concatenate((forward_states, backward_states),axis = 0)
+        actions = np.concatenate((forward_actions, backward_actions),axis = 0)
 
 
-        pdb.set_trace() 
         self.data = {'states': states, 'actions': actions}
-        self.state_dim = 18*1
-        self.state_shape = (18,1,1)
+        self.state_dim = 17*1
+        self.state_shape = (17,1,1)
 
         self.action_dim = 6*1
         self.action_shape = (6,1,1)
@@ -121,9 +123,14 @@ class PolicyDataset(object):
 
         rand_idx = np.random.choice(n, size=batch_size)
 
-        rand_states = self.data['states'][rand_idx, :]
-        rand_actions = self.data['actions'][rand_idx, :]
+        
+        state_noise = np.random.normal(0, 0.4, (128,17))
+        action_noise = np.random.normal(0, 0.4, (128,6))
 
+        rand_states = self.data['states'][rand_idx, :] + state_noise
+        rand_actions = self.data['actions'][rand_idx, :] + action_noise
+
+        
         return rand_states, rand_actions
     
 

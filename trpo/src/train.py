@@ -38,6 +38,7 @@ import argparse
 import signal
 import pickle
 import tensorflow as tf
+import pdb
 
 
 class GracefulKiller:
@@ -110,6 +111,8 @@ def run_episode(env, policy, scaler, animate=False):
         rewards.append(reward)
         step += 1e-3  # increment time step feature
 
+    pdb.set_trace()
+
     return (np.concatenate(observes), np.concatenate(actions),
             np.array(rewards, dtype=np.float64), np.concatenate(unscaled_obs))
 
@@ -135,6 +138,7 @@ def run_policy(env, policy, scaler, logger, episodes):
     trajectories = []
     for e in range(episodes):
         observes, actions, rewards, unscaled_obs = run_episode(env, policy, scaler)
+        
         total_steps += observes.shape[0]
         trajectory = {'observes': observes,
                       'actions': actions,
@@ -337,6 +341,7 @@ def main(env_name, num_episodes, gamma, lam, kl_targ, batch_size, test):
     observes, actions,_, _  = build_train_set(test_trajectories) 
     state_list.extend(observes.tolist())
     action_list.extend(actions.tolist())
+
     
     state_list = np.array(state_list)
     action_list = np.array(action_list)

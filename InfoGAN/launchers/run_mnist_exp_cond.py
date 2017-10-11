@@ -21,11 +21,12 @@ if __name__ == "__main__":
     root_checkpoint_dir = "ckt/mnist"
     batch_size = 128
     updates_per_epoch = 100
-    max_epoch = 50
+    max_epoch = 50000
 
     exp_name = "mnist_%s" % timestamp
 
-    log_dir = os.path.join(root_log_dir, exp_name)
+    #log_dir = os.path.join(root_log_dir, exp_name)
+    log_dir = root_log_dir
     checkpoint_dir = os.path.join(root_checkpoint_dir, exp_name)
 
     mkdir_p(log_dir)
@@ -35,12 +36,16 @@ if __name__ == "__main__":
     dataset = PolicyDataset()
 
 
+    # latent_spec = [
+    #     (Uniform(62), False),
+    #     (Categorical(10), True),
+    #     (Uniform(1, fix_std=True), True),
+    #     (Uniform(1, fix_std=True), True),
+    # ]
+
     latent_spec = [
-        (Uniform(62), False),
-        (Categorical(10), True),
-        (Uniform(1, fix_std=True), True),
-        (Uniform(1, fix_std=True), True),
-    ]
+        (Uniform(65), False),
+        (Categorical(2), True)]
 
     model = RegularizedGAN(
         output_dist=MeanBernoulli(dataset.action_dim),

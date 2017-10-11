@@ -33,21 +33,23 @@ class RegularizedGAN(object):
                      ((pt.template("state").
                      custom_fully_connected(128).
                      fc_batch_norm().
-                     apply(tf.nn.relu)))
+                     apply(tf.nn.elu)))
 
                 shared_template = \
                     (pt.template("input").
                      #reshape([-1] + list(image_shape)).
                      #custom_conv2d(64, k_h=4, k_w=4).
                      custom_fully_connected(256).
-                     apply(leaky_rectify).
+                     apply(tf.nn.relu).
+                     dropout(0.55))
                      #custom_conv2d(128, k_h=4, k_w=4).
-                     custom_fully_connected(512).
-                     conv_batch_norm().
-                     apply(leaky_rectify).
-                     custom_fully_connected(1024).
-                     fc_batch_norm().
-                     apply(leaky_rectify))
+                     #custom_fully_connected(512).
+                     #fc_batch_norm().
+                     #apply(tf.nn.sigmoid).
+                     #dropout(0.55))
+                     #custom_fully_connected(1024).
+                     #fc_batch_norm().
+                     #apply(leaky_rectify))
                 self.discriminator_template = shared_template.custom_fully_connected(1)
                 self.encoder_template = \
                     (shared_template.
@@ -59,12 +61,28 @@ class RegularizedGAN(object):
             with tf.variable_scope("g_net"):
                 self.generator_template = \
                     (pt.template("input").
-                     custom_fully_connected(1024).
+                     custom_fully_connected(256).
                      fc_batch_norm().
-                     apply(tf.nn.relu).
+                     apply(tf.nn.elu).
+                     custom_fully_connected(128).
+                     fc_batch_norm().
+                     apply(tf.nn.elu).
+                     custom_fully_connected(32).
+                     fc_batch_norm().
+                     apply(tf.nn.elu).
                      custom_fully_connected(6).
                      fc_batch_norm().
-                     apply(tf.nn.relu).
+                     apply(tf.nn.tanh).
+                     # custom_fully_connected(64).
+                     # fc_batch_norm().
+                     # apply(tf.nn.elu).
+                     # custom_fully_connected(32).
+                     # fc_batch_norm().
+                     # dropout(0.75).
+                     # apply(tf.nn.elu).
+                     # custom_fully_connected(6).
+                     # fc_batch_norm().
+                     # apply(tf.nn.tanh).
                      #reshape([-1, int(image_size / 4), int(image_size / 4), 128]).
                      #custom_deconv2d([0, int(image_size / 2), int(image_size / 2), 64], k_h=4, k_w=4).
                      #fc_batch_norm().
@@ -85,6 +103,7 @@ class RegularizedGAN(object):
 
         d_out = self.discriminator_template.construct(input=whole_input)
         
+
         d = tf.nn.sigmoid(d_out[:, 0])
         
         #whole_input = tf.convert_to_tensor(whole_input, dtype = tf.float32)

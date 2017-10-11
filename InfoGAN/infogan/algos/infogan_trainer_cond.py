@@ -6,6 +6,11 @@ from progressbar import ETA, Bar, Percentage, ProgressBar
 from infogan.misc.distributions import Bernoulli, Gaussian, Categorical
 import sys
 import pdb
+import gym
+from gym import wrappers
+import os 
+from datetime import datetime
+
 TINY = 1e-8
 
 
@@ -19,7 +24,7 @@ class InfoGANTrainer(object):
                  checkpoint_dir="ckt",
                  max_epoch=100,
                  updates_per_epoch=100,
-                 snapshot_interval=10000,
+                 snapshot_interval=5000,
                  info_reg_coeff=1.0,
                  discriminator_learning_rate=2e-4,
                  generator_learning_rate=2e-4,
@@ -43,6 +48,13 @@ class InfoGANTrainer(object):
         self.generator_trainer = None
         self.input_tensor = None
         self.log_vars = []
+        now = datetime.utcnow().strftime("%b-%d_%H:%M:%S")  # create unique directories
+        aigym_path = os.path.join('./Videos', now)
+        self.env = gym.make('Walker2d-v1')
+        self.env = wrappers.Monitor(self.env, aigym_path, force=True)
+
+    def em_loss(self,y_coefficients, y_pred):
+        return tf.reduce_mean(tf.multiply(y_coefficients, y_pred))
 
     def init_opt(self):
         #self.input_tensor = input_tensor = tf.placeholder(tf.float32, [self.batch_size, self.dataset.image_dim])
@@ -62,7 +74,19 @@ class InfoGANTrainer(object):
 
             reg_z = self.model.reg_z(z_var)
 
-            discriminator_loss = - tf.reduce_mean(tf.log(real_d + TINY) + tf.log(1. - fake_d + TINY))
+            #discriminator_loss = - tf.reduce_mean(tf.log(real_d + TINY) + tf.log(1. - fake_d + TINY))
+
+            #adding wasserstein loss
+
+            epsilon = tf.placeholder(tf.float32, shape=(self.batch_size, 6))
+            
+            x_hat = epsilon *self.input_tensor + (1.0 - epsilon) * fake_x
+            
+            _disc_loss = self.em_loss(tf.ones(self.batch_size), fake_d) - self.em_loss(tf.ones(self.batch_size), real_d) 
+
+
+            discriminator_loss = -_disc_loss
+
             generator_loss = - tf.reduce_mean(tf.log(fake_d + TINY))
 
             self.log_vars.append(("discriminator_loss", discriminator_loss))
@@ -212,6 +236,33 @@ class InfoGANTrainer(object):
     #         imgs = tf.expand_dims(imgs, 0)
     #         tf.summary.image("image_%d_%s" % (dist_idx, dist.__class__.__name__), imgs)
 
+    def test(self, sess):
+        
+
+        obs = self.env.reset()
+
+        single_state_input = tf.placeholder(tf.float32, [1, self.dataset.state_dim])
+
+        c0 = tf.convert_to_tensor(np.array([[1., 0.]]), dtype=tf.float32)
+        c1 = tf.convert_to_tensor(np.array([[0., 1.]]), dtype=tf.float32)
+
+        # build graph
+        z_var = self.model.latent_dist.sample_prior(1)
+        z_var = tf.concat([z_var[:, :-2], c1], axis=1)
+        action, _ = self.model.generate(z_var, single_state_input)
+
+        while True:
+            self.env.render()
+
+            fd = {single_state_input: np.array([obs])}
+            action_val = sess.run(action, feed_dict=fd)
+
+
+            obs, reward, done, _ = self.env.step(action_val)
+
+            if done:
+                break
+
 
     def train(self):
 
@@ -250,11 +301,14 @@ class InfoGANTrainer(object):
                     all_log_vals.append(log_vals)
                     counter += 1
 
+
                     if counter % self.snapshot_interval == 0:
                         snapshot_name = "%s_%s" % (self.exp_name, str(counter))
                         fn = saver.save(sess, "%s/%s.ckpt" % (self.checkpoint_dir, snapshot_name))
                         print("Model saved in file: %s" % fn)
-
+                        
+                if epoch%50 == 0:
+                        self.test(sess)    
                 y, x = self.dataset.next_batch(self.batch_size)
 
                 summary_str = sess.run(summary_op, {self.input_tensor: x,self.state_input:y})
