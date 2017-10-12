@@ -43,7 +43,7 @@ class InfoGANTrainer(object):
         self.updates_per_epoch = updates_per_epoch
         self.generator_learning_rate = generator_learning_rate
         self.discriminator_learning_rate = discriminator_learning_rate
-        self.info_reg_coeff = info_reg_coeff
+        self.info_reg_coeff = 1
         self.discriminator_trainer = None
         self.generator_trainer = None
         self.input_tensor = None
@@ -51,15 +51,15 @@ class InfoGANTrainer(object):
         now = datetime.utcnow().strftime("%b-%d_%H:%M:%S")  # create unique directories
         aigym_path = os.path.join('./Videos', now)
         self.env = gym.make('Walker2d-v1')
-        #self.env = wrappers.Monitor(self.env, aigym_path, force=True)
+        self.env = wrappers.Monitor(self.env, aigym_path, force=True)
 
     def em_loss(self,y_coefficients, y_pred):
         return tf.reduce_mean(tf.multiply(y_coefficients, y_pred))
 
     def init_opt(self):
         #self.input_tensor = input_tensor = tf.placeholder(tf.float32, [self.batch_size, self.dataset.image_dim])
-        self.input_tensor  = input_tensor = tf.placeholder(tf.float32, [self.batch_size, self.dataset.action_dim])
-        self.state_input = state_input = tf.placeholder(tf.float32, [self.batch_size, self.dataset.state_dim])
+        self.input_tensor  = input_tensor = tf.placeholder(tf.float32, [None, self.dataset.action_dim])
+        self.state_input = state_input = tf.placeholder(tf.float32, [None, self.dataset.state_dim])
 
         with pt.defaults_scope(phase=pt.Phase.train):
             #Z_VAR IS NOISE AND LATENT CODE TOGETHER
@@ -74,18 +74,16 @@ class InfoGANTrainer(object):
 
             reg_z = self.model.reg_z(z_var)
 
-            #discriminator_loss = - tf.reduce_mean(tf.log(real_d + TINY) + tf.log(1. - fake_d + TINY))
+            discriminator_loss = - tf.reduce_mean(tf.log(real_d + TINY) + tf.log(1. - fake_d + TINY))
 
             #adding wasserstein loss
 
-            epsilon = tf.placeholder(tf.float32, shape=(self.batch_size, 6))
-            
-            x_hat = epsilon *self.input_tensor + (1.0 - epsilon) * fake_x
-            
-            _disc_loss = self.em_loss(tf.ones(self.batch_size), fake_d) - self.em_loss(tf.ones(self.batch_size), real_d) 
+            #epsilon = tf.placeholder(tf.float32, shape=(self.batch_size, 6))
+            #x_hat = epsilon *self.input_tensor + (1.0 - epsilon) * fake_x
+            #discriminator_loss = self.em_loss(tf.ones(self.batch_size), fake_d) - self.em_loss(tf.ones(self.batch_size), real_d) 
 
 
-            discriminator_loss = -_disc_loss
+            #discriminator_loss =    (-_disc_loss)
 
             generator_loss = - tf.reduce_mean(tf.log(fake_d + TINY))
 
@@ -110,7 +108,7 @@ class InfoGANTrainer(object):
                 cross_ent += disc_cross_ent
                 self.log_vars.append(("MI_disc", disc_mi_est))
                 self.log_vars.append(("CrossEnt_disc", disc_cross_ent))
-                discriminator_loss -= self.info_reg_coeff * disc_mi_est
+                discriminator_loss += self.info_reg_coeff * disc_mi_est
                 generator_loss -= self.info_reg_coeff * disc_mi_est
                 #pdb.set_trace()
             if len(self.model.reg_cont_latent_dist.dists) > 0:
@@ -250,15 +248,22 @@ class InfoGANTrainer(object):
         z_var = self.model.latent_dist.sample_prior(1)
         z_var = tf.concat([z_var[:, :-2], c1], axis=1)
         action, _ = self.model.generate(z_var, single_state_input)
+        count = 0
 
         while True:
-            #self.env.render()
-
+            
+            
+            self.env.render() 
             fd = {single_state_input: np.array([obs])}
             action_val = sess.run(action, feed_dict=fd)
 
-
+            
+            #action_val[0] = 0.4
             obs, reward, done, _ = self.env.step(action_val)
+
+            # if count == 0:
+            #     pdb.set_trace()
+            # count +=1
 
             if done:
                 break

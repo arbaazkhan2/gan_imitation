@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # ]
 
     latent_spec = [
-        (Uniform(65), False),
+        (Uniform(5), False),
         (Categorical(2), True)]
 
     model = RegularizedGAN(

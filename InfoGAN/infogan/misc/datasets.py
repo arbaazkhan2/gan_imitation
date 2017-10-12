@@ -124,9 +124,8 @@ class PolicyDataset(object):
         rand_idx = np.random.choice(n, size=batch_size)
 
         
-        state_noise = np.random.normal(0, 0.4, (128,17))
-        action_noise = np.random.normal(0, 0.4, (128,6))
-
+        state_noise = np.random.normal(0, 0.04, (batch_size,17))
+        action_noise = np.random.normal(0, 0.04, (batch_size,6))
         rand_states = self.data['states'][rand_idx, :] + state_noise
         rand_actions = self.data['actions'][rand_idx, :] + action_noise
 

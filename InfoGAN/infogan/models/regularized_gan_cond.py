@@ -43,9 +43,9 @@ class RegularizedGAN(object):
                      apply(tf.nn.relu).
                      custom_fully_connected(512).
                      fc_batch_norm().
-                     apply(tf.nn.sigmoid))
+                     apply(tf.nn.sigmoid).
                      #dropout(0.55))
-                     custom_fully_connected(1024).
+                     custom_fully_connected(34).
                      fc_batch_norm().
                      apply(leaky_rectify))
                 self.discriminator_template = shared_template.custom_fully_connected(1)
@@ -70,7 +70,7 @@ class RegularizedGAN(object):
                      apply(tf.nn.elu).
                      custom_fully_connected(6).
                      fc_batch_norm().
-                     apply(tf.nn.tanh).
+                     apply(tf.nn.sigmoid).
                      # custom_fully_connected(64).
                      # fc_batch_norm().
                      # apply(tf.nn.elu).
@@ -122,7 +122,10 @@ class RegularizedGAN(object):
         #whole_input = state_out.join([z_var], include_self=True)
         x_dist_flat = self.generator_template.construct(input=whole_input)
         x_dist_info = self.output_dist.activate_dist(x_dist_flat)
-        return self.output_dist.sample(x_dist_info), x_dist_info
+
+
+        # return self.output_dist.sample(x_dist_info)*2 - 1, x_dist_info
+        return x_dist_flat * (2) - 1, x_dist_info
 
     def disc_reg_z(self, reg_z_var):
         ret = []
